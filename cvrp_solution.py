@@ -10,7 +10,7 @@ class CVRPSolution():
         self.routes = []
         self.cost = 0
         self.fitness = 0
-        self.penalty = 300
+        self.penalty = 500
 
     @classmethod
     def generate_random(cls, problem: CVRPInstance) -> "CVRPSolution":

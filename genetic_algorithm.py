@@ -5,36 +5,35 @@ from cvrp_solution import CVRPSolution
 
 
 class GeneticAlgorithm:
-    def __init__(self, problem_instance: CVRPInstance, number_of_iterations: int, population_size: int):
+    def __init__(self, problem_instance: CVRPInstance, number_of_iterations: int, population_size: int, tournament_size: int, enable_immigrants: bool = False):
         self.problem_instance = problem_instance
         self.population_size = population_size
         self.population: list[CVRPSolution] = []
 
         self.number_of_iterations = number_of_iterations
-        self.elite_size = 4 # int(0.05 * self.population_size)
+        self.elite_size = 4
+        self.tournament_size = tournament_size
         self.crossover_probbability = 0.7
         self.mutation_probbability = 0.08
 
         self.best_fitness = 0
         self.fitness_history = []
-
+        self.stagnation_counter = 0
+        self.enable_immigrants = enable_immigrants
 
     def _init_population(self) -> None:
         population = [CVRPSolution.generate_random(self.problem_instance) for _ in range(self.population_size)]
         self.population = population
 
-    def _evaluate(self, population):
+    def _evaluate(self, population: list[CVRPSolution]):
         for solution in population:
             solution.evaluate(self.problem_instance)
         
-        return population
-
-
-    def _parent_selection(self, number_of_contestants=3) -> list[int]:
+    def _parent_selection(self) -> list[int]:
         parents = []
 
         for _ in range(self.population_size):
-            candidate_indices = random.sample(range(self.population_size), number_of_contestants)
+            candidate_indices = random.sample(range(self.population_size), self.tournament_size)
             fitness = [self.population[candidate].fitness for candidate in candidate_indices]
             best_index = fitness.index(min(fitness))
             parents.append(candidate_indices[best_index])
@@ -82,8 +81,8 @@ class GeneticAlgorithm:
 
         for idx in range(self.number_of_iterations):
             offspring = []
+            parents = self._parent_selection()
             elite = sorted(self.population, key=lambda s: s.fitness)[:self.elite_size]
-            parents = self._parent_selection(2)
 
             random.shuffle(parents)
             for i in range(0, self.population_size-self.elite_size, 2):
@@ -100,13 +99,38 @@ class GeneticAlgorithm:
                 
                 offspring.extend([CVRPSolution(child_1), CVRPSolution(child_2)])
             
-            offspring = self._evaluate(offspring)
+            self._evaluate(offspring)
             offspring_sorted = sorted(offspring, key=lambda s: s.fitness)
+
             self.population = elite + offspring_sorted[:self.population_size - self.elite_size]
+            self.best_fitness = min(self.population, key=lambda s: s.cost).cost
+            self.fitness_history.append(self.best_fitness)
+            
+             
+            # Detect stagnation
+            if self.enable_immigrants:
+                if idx>0 and (self.fitness_history[idx] < self.fitness_history[idx-1]):
+                    self.stagnation_counter = 0
+                else:
+                    self.stagnation_counter += 1
+                
+                if self.stagnation_counter >= 50:
+                    print("Stagnation detected. Injecting random solutions")
 
-            # best = min(self.population, key=lambda s: s.cost)
-            # infeasible = sum(1 for s in self.population if s.fitness != s.cost)
-            # print(f'Gen {idx}: best_cost={best.cost}, infeasible={infeasible}')
+                    immigrants_size = int(self.population_size * 0.2)
+                    immigrants = [CVRPSolution.generate_random(self.problem_instance) for _ in range(immigrants_size)]
 
+                    self._evaluate(immigrants)
 
-        return min(self.population, key=lambda s: s.cost)
+                    self.population[-immigrants_size:] = immigrants
+                    self.mutation_probbability = 0.3
+                    self.tournament_size = 2
+                    self.stagnation_counter = 0
+                elif self.stagnation_counter == 30:
+                    self.mutation_probbability = 0.08
+                    self.tournament_size = 3
+
+            infeasible = sum(1 for s in self.population if s.fitness != s.cost)
+            print(f'Gen {idx}: best_cost={self.best_fitness}, infeasible={infeasible}')
+
+        return (self.best_fitness, self.fitness_history)
