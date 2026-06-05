@@ -1,16 +1,17 @@
 import math
 import re
 
-class CVRPInstance():
+
+class CVRPInstance:
     def __init__(
-            self,
-            dim: int,
-            cap: int,
-            num_vehicles: int,
-            depot: int,
-            coord: list[tuple[int, int]],
-            demand: list[int]
-        ):
+        self,
+        dim: int,
+        cap: int,
+        num_vehicles: int,
+        depot: int,
+        coord: list[tuple[int, int]],
+        demand: list[int],
+    ):
         self.dimension = dim
         self.capacity = cap
         self.number_of_vehicles = num_vehicles
@@ -26,7 +27,7 @@ class CVRPInstance():
         parsed_demands = []
         section = None
 
-        with open(path, 'r') as file:
+        with open(path, "r") as file:
             for line in file:
                 line = line.strip()
 
@@ -54,11 +55,12 @@ class CVRPInstance():
                 elif section == "depot":
                     depot = int(line)
 
-        vehicles = int(re.search(r'k(\d+)', path).group(1))
+        vehicles = int(re.search(r"k(\d+)", path).group(1))
 
         return cls(dim, cap, vehicles, depot, parsed_coords, parsed_demands)
-    
-if __name__ == '__main__':
-    path = 'A-n32-k5.vrp'
+
+
+if __name__ == "__main__":
+    path = "A-n32-k5.vrp"
     instance = CVRPInstance.from_file(path)
     print(instance.demand)

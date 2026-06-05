@@ -3,9 +3,9 @@ import random
 
 from cvrp_instance import CVRPInstance
 
-class CVRPSolution():
 
-    def __init__(self, permutation: list[int]=None) -> None:
+class CVRPSolution:
+    def __init__(self, permutation: list[int] = None) -> None:
         self.permutation = permutation if permutation is not None else []
         self.routes = []
         self.cost = 0
@@ -16,17 +16,18 @@ class CVRPSolution():
     def generate_random(cls, problem: CVRPInstance) -> "CVRPSolution":
         """Can generate unfeasable solutions"""
         permutation = [x for x in range(1, problem.dimension)]
+        # random.seed(42)
         random.shuffle(permutation)
 
         solution = cls(permutation)
         solution.decode_permutation(problem.demand, problem.capacity)
 
         return solution
-        
+
     @staticmethod
     def euclidean_dist(a: tuple[int, int], b: tuple[int, int]) -> float:
-        return math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
-    
+        return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
+
     def decode_permutation(self, demands: list[int], cap: int) -> None:
         """Greedy decoder"""
         self.routes = []
@@ -54,7 +55,7 @@ class CVRPSolution():
                 a = coordinates[nodes[i]]
                 b = coordinates[nodes[i + 1]]
                 total_cost += round(self.euclidean_dist(a, b))
-        
+
         self.cost = total_cost
 
     def fitness_function(self, vehicles: int):
@@ -68,7 +69,8 @@ class CVRPSolution():
         self.decode_permutation(problem.demand, problem.capacity)
         self.cost_function(problem.coordinates)
         self.fitness_function(problem.number_of_vehicles)
-    
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     sol = CVRPSolution(5)
     print(sol.routes)
